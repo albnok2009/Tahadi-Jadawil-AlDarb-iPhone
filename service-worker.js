@@ -1,5 +1,5 @@
-const CACHE = "multiplication-ios-test-v7";
-const CORE = ["./index.html", "./games.html", "./manifest.webmanifest", "./icon.svg"];
+const CACHE = "multiplication-ios-test-v8";
+const CORE = ["./index.html", "./games.html", "./manifest.webmanifest", "./icon.svg", "./icon-android.png"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
 });
