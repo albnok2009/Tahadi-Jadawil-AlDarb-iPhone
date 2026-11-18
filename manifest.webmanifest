@@ -10,9 +10,9 @@
   "theme_color": "#101b3b",
   "icons": [
     {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "./icon-android.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     }
   ]
