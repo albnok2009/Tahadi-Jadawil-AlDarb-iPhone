@@ -1,4 +1,4 @@
-const CACHE = "multiplication-ios-test-v4";
+const CACHE = "multiplication-ios-test-v5";
 const CORE = ["./index.html", "./games.html", "./manifest.webmanifest", "./icon.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
