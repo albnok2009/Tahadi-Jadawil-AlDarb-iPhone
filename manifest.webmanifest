@@ -10,8 +10,8 @@
   "theme_color": "#101b3b",
   "icons": [
     {
-      "src": "./icon-android.png",
-      "sizes": "192x192",
+      "src": "./iphone-app-icon.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     }
