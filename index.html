@@ -1,0 +1,239 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#101b3b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="تحدي جداول الضرب"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./icon.svg"><title>تحدي جداول الضرب – الآيفون</title><style>
+:root{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#fff;background:#0b1230}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#263d83,#0b1230 70%)}main{max-width:620px;margin:auto;padding:24px 16px 50px}.hero{text-align:center;padding:25px 0 12px}.logo{font-size:48px}.muted{color:#bac7ed;font-size:14px}.card{background:#192753;border:1px solid #455b99;border-radius:20px;padding:20px;margin:14px 0;box-shadow:0 12px 25px #0003}h1{font-size:29px;margin:8px 0}h2{font-size:21px;margin:0 0 15px}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:13px;padding:13px 15px;font-weight:750;background:#ffcb48;color:#142044;min-height:48px}button.secondary{background:#314678;color:#fff}button.danger{background:#81364a;color:white}button:disabled{opacity:.5;cursor:not-allowed}.stack{display:grid;gap:10px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}input{width:100%;background:#0e1a3b;border:1px solid #6a81c0;border-radius:12px;padding:13px;color:#fff;margin:8px 0 14px;direction:rtl}.levels button{text-align:right;display:flex;justify-content:space-between;align-items:center;background:#304778;color:white}.levels button.selected{outline:3px solid #ffcb48}.pill{font-size:12px;background:#17244b;padding:5px 8px;border-radius:8px}.question{text-align:center;font-size:clamp(37px,11vw,64px);font-weight:850;margin:20px 0;direction:ltr}.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}.answers button{font-size:26px;background:#f0f4ff;color:#172550;min-height:75px}.answers button.correct{background:#54d6a2}.answers button.wrong{background:#ff8b92}.topline{display:flex;justify-content:space-between;gap:8px;align-items:center}.timer{font-weight:900;font-size:27px;color:#ffcb48}.bar{height:9px;background:#314678;border-radius:20px;overflow:hidden;margin:12px 0}.bar>div{height:100%;background:#ffcb48;transition:width .15s linear}.hidden{display:none!important}.notice{background:#233c72;border-radius:12px;padding:12px;color:#e8efff;font-size:14px}.entry{padding:10px 0;border-bottom:1px solid #3a4b79}.entry:last-child{border:0}.badge{color:#ffd873}.footer{text-align:center;margin-top:25px;font-size:12px;color:#9dadd7}.duelTag{font-size:15px;color:#ffcb48;font-weight:800}.choice{display:flex;align-items:center;gap:10px}.choice input{width:auto;margin:0}.sr{position:absolute;left:-10000px}@media(max-width:380px){.card{padding:15px}.two{grid-template-columns:1fr}}
+.game-link{display:flex;flex-direction:column;gap:5px;padding:16px 18px;background:linear-gradient(120deg,#273c76,#182951);border:1px solid #7384b3;border-radius:15px;color:#ffdc7a;text-decoration:none;font-weight:850;font-size:18px}.game-link span{font-size:13px;color:#c7d4f5;font-weight:500}.game-link:focus-visible{outline:3px solid #ffcb48}</style></head><body><main><header class="hero"><div class="logo">🏆</div><h1>تحدي جداول الضرب – الآيفون</h1><div class="muted">اختبر سرعتك، اجمع نقاطك، وتصدر الترتيب!</div></header><div id="app" aria-live="polite"></div><div class="footer">نسخة الآيفون التجريبية • تحفظ البيانات على هذا الجهاز فقط</div></main><script>
+'use strict';const A=document.getElementById('app'),K='mc_web_v1',levels=[{name:'المستوى الأول',range:[1,5],seconds:25},{name:'المستوى الثاني',range:[6,10],seconds:20},{name:'المستوى الثالث',range:[1,10],seconds:15},{name:'التحدي الأقوى',range:[1,10],seconds:10}];let db=load(),round=null,timer=null,deadline=null,locked=false,screen='home',storageWarning=false;function load(){
+ const empty=()=>({players:{},history:[],errors:[],saved:null});
+ try{
+  const x=JSON.parse(localStorage.getItem(K));
+  if(!x||typeof x!=='object'||Array.isArray(x))return empty();
+  return {
+   players:x.players&&typeof x.players==='object'&&!Array.isArray(x.players)?x.players:{},
+   history:Array.isArray(x.history)?x.history:[],
+   errors:Array.isArray(x.errors)?x.errors:[],
+   saved:x.saved??null
+  };
+ }catch{return empty()}
+}
+function persist(){
+ try{localStorage.setItem(K,JSON.stringify(db));storageWarning=false;return true}
+ catch{
+  if(!storageWarning){storageWarning=true;alert('تعذر حفظ البيانات على هذا المتصفح. تحقق من إعدادات التخزين. قد تفقد التقدم عند إغلاق الصفحة.')}
+  return false;
+ }
+}
+function ar(x){return String(x).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[+d])}function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}function stop(){
+ if(timer!==null){clearInterval(timer);timer=null}
+ deadline=null;
+}
+function cleanName(n){return n.normalize('NFKC').replace(/\p{Cf}/gu,'').replace(/\s+/gu,' ').trim()}
+function nameKey(n){
+ return cleanName(n).normalize('NFKD').toLowerCase().replace(/[\p{M}\s\u0640]/gu,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
+}
+function nameError(n){
+ const name=cleanName(n);
+ if(!nameKey(name))return 'يرجى إدخال اسم المتسابق أو لقبه؛ لا يمكن ترك الاسم فارغًا.';
+ if(Array.from(new Intl.Segmenter('ar',{granularity:'grapheme'}).segment(name)).length>40)return 'اسم المتسابق أو لقبه طويل جدًا. الحد الأقصى هو ٤٠ حرفًا.';
+ return '';
+}
+function nameOK(n){return !nameError(n)}
+function button(t,fn,cl=''){return `<button class="${cl}" onclick="${fn}">${t}</button>`}function home(){stop();screen='home';A.innerHTML=`<div class="card stack"><h2>🏆 ساحة الألعاب والتحديات</h2><div class="notice">جميع ألعاب تحدي جداول الضرب في مكان واحد، مع الحفاظ على تقدم التحديات الأساسية على هذا الجهاز.</div><div class="two">${button('🎯 التحدي الفردي','setup(false)')}${button('⚔️ المنافسة الثنائية','setup(true)','secondary')}</div><a class="game-link" href="./games.html#memory">🧠 تحدي الذاكرة الذهبية <span>فردي وثنائي • حسم ذهبي</span></a><a class="game-link" href="./games.html#rescue">🌲 رحلة الإنقاذ <span>ساعد الطفل للوصول إلى والديه</span></a>${db.saved?button('▶ استكمال التحدي السابق','resume()','secondary'):''}<div class="two">${button('🏅 لوحة المتصدرين','leaderboard()','secondary')}${button('📚 التدريب على الأخطاء','practice()','secondary')}</div></div><div class="notice">الألعاب الجديدة في نسخة تجريبية. يتم حفظ التقدم محليًا على جهازك، ولا تتم مزامنته بين الأجهزة.</div>`}
+let practiceSession=null;let dual=false,level=0;function setup(d){dual=d;level=0;screen='setup';drawSetup()}function drawSetup(){A.innerHTML=`<div class="card"><h2>${dual?'المنافسة الثنائية':'تحدٍ فردي'}</h2><label for="p1">${dual?'اسم المتسابق الأول أو لقبه':'اسم المتسابق أو لقبه'}</label><input id="p1" placeholder="اسم حقيقي أو مستعار — حتى ٤٠ حرفًا">${dual?'<label for="p2">اسم المتسابق الثاني أو لقبه</label><input id="p2" placeholder="اسم حقيقي أو مستعار — حتى ٤٠ حرفًا">':''}<h2>اختر المستوى</h2><div class="stack levels">${levels.map((l,i)=>`<button class="${level===i?'selected':''}" onclick="chooseLevel(${i})"><span>${l.name}</span><span class="pill">${ar(l.seconds)} ثانية</span></button>`).join('')}</div><div class="stack" style="margin-top:16px">${button('ابدأ التحدي','start()')}${button('العودة للرئيسية','home()','secondary')}</div></div>`}function chooseLevel(i){const p1=document.getElementById('p1').value,p2=dual?document.getElementById('p2').value:'';level=i;drawSetup();document.getElementById('p1').value=p1;if(dual)document.getElementById('p2').value=p2}function gen(l){let [min,max]=l.range,qs=[],seen=new Set();while(qs.length<15){let a=min+Math.floor(Math.random()*(max-min+1)),b=1+Math.floor(Math.random()*10),key=a+','+b;if(seen.has(key))continue;seen.add(key);qs.push({a,b,answer:a*b})}return qs}function start(){
+ let names=[cleanName(document.getElementById('p1').value)];
+ if(dual)names.push(cleanName(document.getElementById('p2').value));
+ const error=names.map(nameError).find(Boolean);
+ if(error){alert(error);return}
+ if(dual&&nameKey(names[0])===nameKey(names[1])){alert('يرجى اختيار اسمين مختلفين للمتسابقين؛ الاسمان متطابقان بعد تجاهل المسافات والفروق البسيطة في الكتابة.');return}
+ if(db.saved&&!confirm('هناك جولة محفوظة. هل تريد بدء جولة جديدة واستبدالها؟'))return;
+ stop();
+ round={dual,names,level,questions:gen(levels[level]),turn:0,index:0,scores:names.map(()=>0),correct:names.map(()=>0),mistakes:[],pending:true,phase:'question',remaining:levels[level].seconds,remainingMs:levels[level].seconds*1000,done:false};
+ saveRound();showQuestion();
+}
+function saveRound(){db.saved=round;persist()}
+function resume(){
+ stop();if(!db.saved)return home();
+ round=db.saved;dual=round.dual;level=round.level;
+ // Preserve V1.1 saves, including an answer saved during its feedback delay.
+ if(!round.phase)round.phase=round.done?'done':round.pending===false?'feedback':'question';
+ if(round.remainingMs===undefined)round.remainingMs=round.remaining*1000;
+ if(round.phase==='feedback'&&!Object.hasOwn(round,'chosen'))advanceRound();
+ renderRound();
+}
+function currentPlayer(){return round.dual?Math.floor(round.turn/15):0}
+function renderRound(){
+ if(round.phase.startsWith('golden'))return renderGolden();
+ if(round.done||round.phase==='done')return finish();
+ if(round.phase==='handoff')return showHandoff();
+ showQuestion();
+}
+function showHandoff(){
+ stop();screen='handoff';locked=true;saveRound();
+ A.innerHTML=`<div class="card stack"><h2>اكتمل تحدي المتسابق الأول</h2><div class="notice">ستظهر نتائج المتسابقين بعد انتهاء المتسابق الثاني.</div><div>المتسابق الثاني: ${esc(round.names[1])}</div>${button('بدء تحدي المتسابق الثاني','startSecond()')}${button('حفظ الجولة والعودة','pause()','secondary')}</div>`;
+}
+function startSecond(){
+ if(screen!=='handoff'||!round||round.phase!=='handoff')return;
+ round.phase='question';saveRound();showQuestion();
+}
+function showQuestion(){
+ stop();if(!round)return home();
+ if(!['question','feedback'].includes(round.phase))return renderRound();
+ const feedback=round.phase==='feedback';
+ screen='game';locked=feedback;
+ let p=currentPlayer(),q=round.questions[round.index];
+ // Keep answer ordering stable when the same question is resumed.
+ if(!round.options){
+  let options=[q.answer];
+  while(options.length<4){let candidate=Math.max(0,q.answer+Math.floor(Math.random()*25)-12);if(!options.includes(candidate))options.push(candidate)}
+  for(let i=options.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[options[i],options[j]]=[options[j],options[i]]}
+  round.options=options;
+ }
+ round.pending=!feedback;saveRound();
+ A.innerHTML=`<div class="card"><div class="topline"><span>${round.dual?`<span class="duelTag">المتسابق ${p===0?'الأول':'الثاني'}</span><div>${esc(round.names[p])}</div>`:esc(round.names[p])}</span><span class="timer" id="clock">${ar(Math.ceil(round.remainingMs/1000))} ث</span></div><div class="muted">${levels[round.level].name} • السؤال ${ar(round.index+1)} من ١٥</div><div class="bar"><div id="progress" style="width:${round.remainingMs/(levels[round.level].seconds*10)}%"></div></div><div class="question">${ar(q.a)} × ${ar(q.b)} = ؟</div><div class="answers">${round.options.map((n,i)=>`<button id="ans${i}" onclick="answer(${i})">${ar(n)}</button>`).join('')}</div>${round.dual?'<div class="notice">تظهر النتائج بعد انتهاء المتسابقين.</div>':`<div class="muted" style="text-align:center;margin-top:16px">النقاط: ${ar(round.scores[p])}</div>`}<div class="stack" style="margin-top:16px">${feedback?button('السؤال التالي','nextQuestion()'):''}${button('حفظ الجولة والعودة','pause()','secondary')}</div></div>`;
+ if(feedback){showAnswerFeedback(round.options,q.answer,round.chosen);return}
+ deadline=performance.now()+round.remainingMs;
+ timer=setInterval(tick,100);
+ tick();
+}
+function updateRemaining(){
+ if(deadline!==null&&round){round.remainingMs=Math.max(0,deadline-performance.now());round.remaining=Math.ceil(round.remainingMs/1000)}
+}
+function tick(){
+ if(screen!=='game'||!round||round.phase!=='question')return;
+ updateRemaining();saveRound();
+ document.getElementById('clock').textContent=ar(round.remaining)+' ث';
+ document.getElementById('progress').style.width=round.remainingMs/(levels[round.level].seconds*10)+'%';
+ if(round.remainingMs<=0)answer(-1);
+}
+function answer(i){
+ if(locked||screen!=='game'||!round||round.phase!=='question'||!Number.isInteger(i)||i< -1||i>=round.options.length)return;
+ updateRemaining();if(round.remainingMs<=0)i=-1;
+ locked=true;stop();
+ let q=round.questions[round.index],p=currentPlayer(),chosen=i<0?null:round.options[i],ok=chosen===q.answer;
+ if(ok){round.scores[p]+=10;round.correct[p]++}
+ else round.mistakes.push({name:round.names[p],player:p+1,a:q.a,b:q.b,answer:q.answer,chosen});
+ round.chosen=chosen;round.pending=false;round.phase='feedback';saveRound();showQuestion();
+}
+function showAnswerFeedback(options,correct,chosen){
+ document.querySelectorAll('.answers button').forEach((b,i)=>{
+  b.disabled=true;
+  if(options[i]===correct)b.classList.add('correct');
+  else if(options[i]===chosen)b.classList.add('wrong');
+ });
+ const feedback=document.createElement('div');feedback.className='notice';
+ feedback.textContent=chosen===correct?'أحسنت! إجابة صحيحة.':'الإجابة الصحيحة: '+ar(correct);
+ document.querySelector('.answers').after(feedback);
+}
+function nextQuestion(){
+ if(!round||screen!=='game'||round.phase!=='feedback')return;
+ advanceRound();renderRound();
+}
+function advanceRound(){
+ if(!round||round.phase!=='feedback')return;
+ round.turn++;round.options=null;delete round.chosen;
+ round.index=round.turn%15;
+ round.remaining=levels[round.level].seconds;round.remainingMs=round.remaining*1000;
+ round.pending=true;
+ round.phase=round.turn>=(round.dual?30:15)?'done':round.dual&&round.turn===15?'handoff':'question';
+ round.done=round.phase==='done';saveRound();
+}
+function pause(){
+ if(!round)return home();
+ updateRemaining();stop();saveRound();home();
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&(['game','handoff','golden'].includes(screen)))pause()});
+window.addEventListener('pagehide',()=>{if(['game','handoff','golden'].includes(screen))pause()});
+// Golden rounds do not use elapsed time or change the base-round scores.
+function prepareGolden(){
+ round.done=false;round.phase='goldenReady';
+ round.golden={number:0,player:0,questions:[],answers:[null,null],used:[],correct:[0,0],winner:null};
+ saveRound();renderGolden();
+}
+function goldenPair(){
+ const g=round.golden,[min,max]=levels[round.level].range;
+ // Same first factor and same second-factor difficulty family for both players.
+ const groups=[[1,10],[2,5],[3,4],[6,7,8,9]],pool=[];
+ for(let a=min;a<=max;a++)for(const group of groups)for(let i=0;i<group.length;i++)for(let j=i+1;j<group.length;j++){
+  const pair=[{a,b:group[i],answer:a*group[i]},{a,b:group[j],answer:a*group[j]}];
+  pool.push(pair);
+ }
+ const key=q=>q.a+','+q.b;
+ let choices=pool.filter(pair=>pair.every(q=>!g.used.includes(key(q))));
+ if(!choices.length){
+  // The finite multiplication table cycles only after the unused pairs run out.
+  g.used=g.questions.map(key);
+  choices=pool.filter(pair=>pair.every(q=>!g.used.includes(key(q))));
+ }
+ let pair=choices[Math.floor(Math.random()*choices.length)];
+ if(Math.random()<.5)pair.reverse();
+ g.questions=pair;g.used.push(...pair.map(key));g.number++;g.player=0;g.answers=[null,null];
+ round.options=null;round.phase='goldenQuestion';saveRound();
+}
+function startGolden(){
+ if(!round||round.phase!=='goldenReady'||screen!=='golden')return;
+ goldenPair();renderGolden();
+}
+function renderGolden(){
+ stop();screen='golden';locked=round.phase!=='goldenQuestion';
+ const g=round.golden;
+ if(round.phase==='goldenReady'){
+  A.innerHTML=`<div class="card stack"><h2>تعادل المتسابقان</h2><div class="notice">تحدي الحسم الذهبي: سؤال إضافي لكل متسابق، دون مؤقت. لا يُعلن الفائز إلا بعد إجابة الطرفين.</div>${button('بدء تحدي الحسم الذهبي','startGolden()')}${button('حفظ الجولة والعودة','pause()','secondary')}</div>`;
+  return;
+ }
+ const p=g.player,q=g.questions[p],answered=g.answers[p]!==null;
+ if(!round.options)round.options=practiceOptions(q.answer);
+ saveRound();
+ A.innerHTML=`<div class="card stack"><h2>🏆 تحدي الحسم الذهبي</h2><div class="muted">المواجهة ${ar(g.number)} • ${levels[round.level].name} • دون مؤقت</div><div class="duelTag">المتسابق ${p===0?'الأول':'الثاني'}</div><div>${esc(round.names[p])}</div><div class="notice">تُحجب نتيجة المتسابق الأول حتى انتهاء إجابة المتسابق الثاني.</div><div class="question">${ar(q.a)} × ${ar(q.b)} = ؟</div><div class="answers">${round.options.map((n,i)=>`<button id="gold${i}" onclick="answerGolden(${i})">${ar(n)}</button>`).join('')}</div>${answered?button('السؤال التالي','nextGolden()'):''}${button('حفظ الجولة والعودة','pause()','secondary')}</div>`;
+ if(answered)showAnswerFeedback(round.options,q.answer,g.answers[p].chosen);
+}
+function answerGolden(i){
+ if(!round||screen!=='golden'||round.phase!=='goldenQuestion'||!Number.isInteger(i)||i<0||i>=round.options.length)return;
+ const g=round.golden,p=g.player,q=g.questions[p];
+ if(g.answers[p]!==null)return;
+ const chosen=round.options[i],ok=chosen===q.answer;
+ g.answers[p]={chosen,ok};if(ok)g.correct[p]++;
+ else round.mistakes.push({name:round.names[p],player:p+1,a:q.a,b:q.b,answer:q.answer,chosen,golden:true});
+ round.phase='goldenFeedback';saveRound();renderGolden();
+}
+function nextGolden(){
+ if(!round||screen!=='golden'||round.phase!=='goldenFeedback')return;
+ const g=round.golden;
+ if(g.player===0){
+  g.player=1;round.options=null;round.phase='goldenQuestion';saveRound();renderGolden();return;
+ }
+ // Only compare once both players have answered the same number of questions.
+ if(g.answers[0].ok!==g.answers[1].ok){
+  g.winner=g.answers[0].ok?0:1;round.phase='done';round.done=true;saveRound();finish();return;
+ }
+ goldenPair();renderGolden();
+}
+function finish(){
+ stop();if(!round)return home();
+ let r=round;
+ if(r.dual&&r.scores[0]===r.scores[1]&&!r.recorded&&r.golden?.winner==null){
+  if(!r.golden)return prepareGolden();
+  return renderGolden();
+ }
+ if(!r.done)return renderRound();
+ screen='result';
+ if(!r.recorded){
+  r.names.forEach((name,p)=>{
+   if(!Object.hasOwn(db.players,name))Object.defineProperty(db.players,name,{value:{name,points:0,games:0,correct:0},enumerable:true,writable:true,configurable:true});
+   db.players[name].points+=r.scores[p];db.players[name].games++;db.players[name].correct+=r.correct[p];
+  });
+  db.errors.push(...r.mistakes);
+  db.history.push({names:r.names,scores:r.scores,level:r.level,dual:r.dual,date:new Date().toISOString(),golden:r.golden?{rounds:r.golden.number,correct:r.golden.correct,winner:r.golden.winner}:null});
+  r.recorded=true;db.saved=null;persist();
+ }
+ const winnerIndex=r.golden?r.golden.winner:r.scores[0]>r.scores[1]?0:1;
+ const winner=r.dual?`الفائز${r.golden?' بالحسم الذهبي':''}: المتسابق ${winnerIndex===0?'الأول':'الثاني'} — ${esc(r.names[winnerIndex])}`:'';
+ A.innerHTML=`<div class="card stack"><h2>🏆 نتائج التحدي</h2>${r.names.map((n,p)=>`<div class="entry"><b>${r.dual?`المتسابق ${p===0?'الأول':'الثاني'}: `:''}${esc(n)}</b><div>الإجابات الصحيحة في الجولة الأساسية: ${ar(r.correct[p])} / ١٥</div><div>النقاط: ${ar(r.scores[p])}</div>${r.golden?`<div>إجابات الحسم الصحيحة: ${ar(r.golden.correct[p])} / ${ar(r.golden.number)}</div>`:''}</div>`).join('')}${winner?`<div class="notice">${winner}</div>`:''}${button('العودة للرئيسية','home()')}${button('لوحة المتصدرين','leaderboard()','secondary')}</div>`;
+ round=null;
+}
+function leaderboard(){stop();screen='board';let list=Object.values(db.players).sort((a,b)=>b.points-a.points);A.innerHTML=`<div class="card"><h2>🏅 لوحة المتصدرين المحلية</h2>${list.length?list.map((p,i)=>`<div class="entry"><b>${ar(i+1)}. ${esc(p.name)}</b><div class="muted">${ar(p.points)} نقطة • ${ar(p.games)} جولة</div></div>`).join(''):'<div class="notice">لا توجد نتائج محفوظة بعد.</div>'}<div class="stack" style="margin-top:15px">${button('العودة للرئيسية','home()','secondary')}</div></div>`}function practice(){stop();screen='practice';practiceSession=null;let es=db.errors.filter(e=>e&&Number.isFinite(e.a)&&Number.isFinite(e.b)&&Number.isFinite(e.answer));let names=[...new Set(es.map(e=>e.name).filter(Boolean))];A.innerHTML=`<div class="card stack"><h2>📚 التدريب على الأخطاء</h2>${es.length?`<div class="notice">اختر المتسابق ثم أجب عن الأسئلة دون عرض الحل مسبقًا. تبقى الأخطاء محفوظة للتدريب مرة أخرى.</div><label for="practicePlayer">المتسابق</label><select id="practicePlayer" style="width:100%;padding:13px;background:#0e1a3b;color:white;border:1px solid #6a81c0;border-radius:12px"><option value="">جميع المتسابقين</option>${names.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join('')}</select>${button('بدء التدريب','beginPractice()')}`:'<div class="notice">لا توجد أخطاء محفوظة حتى الآن. أكمل جولة تتضمن إجابة خاطئة لتظهر هنا.</div>'}${button('العودة للرئيسية','home()','secondary')}</div>`}
+function beginPractice(){let es=db.errors.filter(e=>e&&Number.isFinite(e.a)&&Number.isFinite(e.b)&&Number.isFinite(e.answer));let names=[...new Set(es.map(e=>e.name).filter(Boolean))];let v=document.getElementById('practicePlayer').value;if(v!=='')es=es.filter(e=>e.name===names[Number(v)]);if(!es.length){alert('لا توجد أخطاء لهذا المتسابق.');return}let questions=es.slice(-30).reverse().map(e=>({...e}));practiceSession={questions,index:0,correct:0,answered:false};drawPracticeQuestion()}
+function practiceOptions(answer){let opts=[answer],delta=1;while(opts.length<4){let candidate=answer+(delta%2?delta:-delta);if(candidate>=0&&!opts.includes(candidate))opts.push(candidate);delta++}for(let i=opts.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[opts[i],opts[j]]=[opts[j],opts[i]]}return opts}
+function drawPracticeQuestion(){if(!practiceSession)return practice();screen='practiceQuiz';let s=practiceSession;if(s.index>=s.questions.length)return finishPractice();s.answered=false;let q=s.questions[s.index],opts=practiceOptions(q.answer);s.options=opts;A.innerHTML=`<div class="card stack"><h2>📚 تدريب تفاعلي</h2><div class="muted">السؤال ${ar(s.index+1)} من ${ar(s.questions.length)} • الإجابات الصحيحة: ${ar(s.correct)}</div><div class="muted">${esc(q.name||'متسابق')}${q.player?' • المتسابق '+(q.player===1?'الأول':'الثاني'):''}</div><div class="question">${ar(q.a)} × ${ar(q.b)} = ؟</div><div class="answers">${opts.map((v,i)=>`<button id="pans${i}" onclick="answerPractice(${i})">${ar(v)}</button>`).join('')}</div><div id="practiceFeedback" class="notice hidden" aria-live="polite"></div><div id="practiceNext" class="hidden">${button('السؤال التالي','nextPractice()')}</div>${button('إنهاء التدريب','finishPractice()','secondary')}</div>`}
+function answerPractice(i){let s=practiceSession;if(!s||s.answered||screen!=='practiceQuiz')return;s.answered=true;let q=s.questions[s.index],ok=s.options[i]===q.answer;if(ok)s.correct++;document.querySelectorAll('.answers button').forEach((b,j)=>{b.disabled=true;if(s.options[j]===q.answer)b.classList.add('correct');else if(j===i)b.classList.add('wrong')});let f=document.getElementById('practiceFeedback');f.classList.remove('hidden');f.textContent=ok?'أحسنت! إجابة صحيحة.':'الإجابة الصحيحة: '+ar(q.answer);document.getElementById('practiceNext').classList.remove('hidden');document.getElementById('practiceNext').querySelector('button').textContent='السؤال التالي'}
+function nextPractice(){if(!practiceSession||!practiceSession.answered)return;practiceSession.index++;drawPracticeQuestion()}
+function finishPractice(){let s=practiceSession;if(!s)return practice();screen='practiceResult';let attempted=Math.min(s.questions.length,s.index+(s.answered?1:0));A.innerHTML=`<div class="card stack"><h2>🏅 نتيجة التدريب</h2><div class="notice">أجبت إجابة صحيحة عن ${ar(s.correct)} من ${ar(attempted)} سؤالًا تمّت الإجابة عنها.</div><div class="muted">الأسئلة الموجودة في سجل الأخطاء لم تُحذف، ويمكنك إعادة التدريب عليها.</div>${button('إعادة التدريب','practice()')}${button('العودة للرئيسية','home()','secondary')}</div>`;practiceSession=null}
+home();
+</script><script>if ("serviceWorker" in navigator) { window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js").catch(err => console.warn("تعذر تجهيز التشغيل دون إنترنت", err))); }</script></body></html>
