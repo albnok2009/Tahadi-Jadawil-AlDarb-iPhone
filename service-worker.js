@@ -1,4 +1,4 @@
-const CACHE = "multiplication-ios-test-v13";
+const CACHE = "multiplication-ios-test-v14";
 const CORE = ["./index.html", "./games.html", "./manifest.webmanifest", "./icon.svg", "./icon-android.png", "./iphone-app-icon.png", "./iphone-splash.jpg", "./rescue_boy.png", "./rescue_girl.png", "./a_vibrant_highly_detailed_realistic_illustrative.png", "./a_vibrant_highly_detailed_nature_scene_identical.png", "./a_highly_detailed_vibrant_realistic_illustrative.png"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
