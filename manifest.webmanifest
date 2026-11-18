@@ -1,0 +1,19 @@
+{
+  "name": "تحدي جداول الضرب",
+  "short_name": "جداول الضرب",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1230",
+  "theme_color": "#101b3b",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
