@@ -1,4 +1,4 @@
-const CACHE = "multiplication-ios-test-v17";
+const CACHE = "multiplication-ios-test-v18";
 const CORE = ["./index.html", "./games.html", "./manifest.webmanifest", "./icon.svg", "./icon-android.png", "./iphone-app-icon.png", "./iphone-splash.jpg", "./rescue_boy.png", "./rescue_girl.png", "./a_vibrant_highly_detailed_realistic_illustrative.png", "./a_vibrant_highly_detailed_nature_scene_identical.png", "./a_highly_detailed_vibrant_realistic_illustrative.png"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
@@ -11,21 +11,24 @@ self.addEventListener("fetch", event => {
   if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith((async () => {
     const cached = await caches.match(req);
-    if (cached) {
-      // App pages are cache-first so an installed app can start without a network.
-      if (req.mode === "navigate" || CORE.some(path => new URL(path, self.registration.scope).pathname === new URL(req.url).pathname)) return cached;
+    // Fetch HTML from the network first so Safari does not keep showing outdated screens.
+    // The cached page remains available when the device is offline.
+    if (req.mode === "navigate" || /\\.html$/.test(new URL(req.url).pathname)) {
+      try {
+        const response = await fetch(new Request(req, { cache: "no-store" }));
+        if (response.ok) (await caches.open(CACHE)).put(req, response.clone());
+        return response;
+      } catch (_) {
+        return cached || (await caches.match("./index.html")) || Response.error();
+      }
     }
+    if (cached) return cached;
     try {
       const response = await fetch(req);
-      if (response.ok) {
-        const cache = await caches.open(CACHE);
-        await cache.put(req, response.clone());
-      }
+      if (response.ok) (await caches.open(CACHE)).put(req, response.clone());
       return response;
     } catch (_) {
-      if (cached) return cached;
-      if (req.mode === "navigate") return (await caches.match("./index.html")) || Response.error();
-      return Response.error();
+      return cached || Response.error();
     }
   })());
 });
